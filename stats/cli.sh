@@ -1,7 +1,6 @@
 #!/bin/bash
 
 COMMAND=$1
-SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 show_help() {
   echo ""
