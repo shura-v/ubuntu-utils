@@ -2,7 +2,7 @@
 
 COMMAND=$1
 ARG=$2
-SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 show_help() {
   echo ""
