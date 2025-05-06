@@ -4,7 +4,7 @@ CONFIG="/usr/local/etc/xray/config.json"
 PRIVATE_KEY=$(cat /etc/xray/private.key)
 PUBLIC_KEY=$(cat /etc/xray/public.key)
 SHORT_ID="12345678"
-SERVER_NAME="www.cloudflare.com"
+SERVER_NAME="cdn.jsdelivr.net"
 
 if [ ! -f "$CONFIG" ]; then
   echo "❌ Конфиг не найден. Установи Xray через ./cli.sh install"
