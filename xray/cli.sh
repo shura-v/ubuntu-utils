@@ -2,6 +2,7 @@
 
 COMMAND=$1
 SCRIPTS_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+CONFIG=/usr/local/etc/xray/config.json
 
 show_help() {
   echo ""
@@ -48,7 +49,7 @@ install() {
   echo "$PRIVATE_KEY" > /etc/xray/private.key
   echo "$PUBLIC_KEY" > /etc/xray/public.key
 
-  cat <<EOF > /usr/local/etc/xray/config.json
+  cat <<EOF > $CONFIG
 {
   "inbounds": [
     {
@@ -104,21 +105,101 @@ EOF
   echo "Теперь используй ./cli.sh add для добавления клиента"
 }
 
+check_config() {
+  if [ ! -f "$CONFIG" ]; then
+    echo "❌ Конфиг не найден: $CONFIG"
+    exit 1
+  fi
+
+  # Проверка наличия jq
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "🔧 Устанавливаю jq..."
+    apt-get update && apt-get install -y jq
+  fi
+}
+
+list() {
+  # Извлечение списка клиентов
+  CLIENTS=$(jq -r '.inbounds[0].settings.clients[] | "\(.email) \(.id)"' "$CONFIG")
+
+  if [ -z "$CLIENTS" ]; then
+    echo "🤷 Нет добавленных клиентов."
+    exit 0
+  fi
+
+  echo "📋 Список клиентов Xray:"
+  echo "------------------------"
+  echo "$CLIENTS" | while read -r line; do
+    NAME=$(echo "$line" | awk '{print $1}')
+    UUID=$(echo "$line" | awk '{print $2}')
+    echo "👤 $NAME"
+    echo "   🔐 UUID: $UUID"
+  done
+}
+
+add() {
+  # Извлекаем параметры из конфига
+  PORT=$(jq -r '.inbounds[0].port' "$CONFIG")
+  SERVER_NAME=$(jq -r '.inbounds[0].streamSettings.realitySettings.serverNames[0]' "$CONFIG")
+  SHORT_ID=$(jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0]' "$CONFIG")
+  PUBLIC_KEY=$(cat /etc/xray/public.key)
+
+  UUID=$(cat /proc/sys/kernel/random/uuid)
+  read -p "Имя клиента (например: iphone): " NAME
+
+  # Добавляем клиента
+  TMP=$(mktemp)
+  jq ".inbounds[0].settings.clients += [{\"id\":\"$UUID\",\"flow\":\"xtls-rprx-vision\",\"email\":\"$NAME\"}]" "$CONFIG" > "$TMP" && mv "$TMP" "$CONFIG"
+  systemctl restart xray
+
+  IP=$(curl -s ipv4.icanhazip.com)
+  VLESS_LINK="vless://${UUID}@${IP}:${PORT}?encryption=none&security=reality&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&spx=%2F&type=tcp&flow=xtls-rprx-vision&sni=${SERVER_NAME}#${NAME}"
+
+  echo ""
+  echo "✅ Клиент '$NAME' добавлен!"
+  echo "📲 Ссылка для импорта:"
+  echo "$VLESS_LINK"
+}
+
+remove() {
+  # Имя клиента
+  read -p "Введите имя клиента для удаления (email, например: iphone): " NAME
+
+  # Проверка, существует ли такой пользователь
+  EXISTS=$(jq -r --arg name "$NAME" '.inbounds[0].settings.clients[] | select(.email == $name)' "$CONFIG")
+
+  if [ -z "$EXISTS" ]; then
+    echo "❌ Клиент '$NAME' не найден в конфиге."
+    exit 1
+  fi
+
+  # Удаление клиента
+  TMP=$(mktemp)
+  jq --arg name "$NAME" '(.inbounds[0].settings.clients) |= map(select(.email != $name))' "$CONFIG" > "$TMP"
+
+  mv "$TMP" "$CONFIG"
+  echo "🗑️ Клиент '$NAME' удалён."
+  systemctl restart xray
+}
+
 case "$COMMAND" in
   install)
     install
     ;;
-  add)
-    bash "$SCRIPTS_DIR/add.sh"
-    ;;
   list)
-    bash "$SCRIPTS_DIR/list.sh"
+    check_config;
+    list
+    ;;
+  add)
+    list;
+    add
     ;;
   remove)
-    bash "$SCRIPTS_DIR/remove.sh"
+    list;
+    remove
     ;;
   config)
-    nano /usr/local/etc/xray/config.json && systemctl restart xray
+    nano $CONFIG && systemctl restart xray
     ;;
   log)
     journalctl -u xray -e
