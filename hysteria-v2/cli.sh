@@ -84,17 +84,17 @@ client_config() {
   echo ""
   cat <<EOF
 proxies:
-  - name: \"Hysteria2-Server\"
+  - name: "Hysteria2-Server"
     type: hysteria2
     server: $IP
     port: $PORT
-    password: \"$PASSWORD\"
+    password: "$PASSWORD"
     obfs: salamander
-    up: \"100 mbps\"
-    down: \"100 mbps\"
+    up: "100 mbps"
+    down: "100 mbps"
 
 proxy-groups:
-  - name: \"Proxy\"
+  - name: "Proxy"
     type: select
     proxies:
       - Hysteria2-Server
