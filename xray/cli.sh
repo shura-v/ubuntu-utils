@@ -42,6 +42,7 @@ install() {
   KEYS=$(xray x25519)
   PRIVATE_KEY=$(echo "$KEYS" | grep "Private key" | awk '{print $3}')
   PUBLIC_KEY=$(echo "$KEYS" | grep "Public key" | awk '{print $3}')
+  SHORT_ID=$(openssl rand -hex 4)
 
   mkdir -p /etc/xray
   echo "$PRIVATE_KEY" > /etc/xray/private.key
@@ -66,7 +67,7 @@ install() {
           "xver": 0,
           "serverNames": ["cdn.jsdelivr.net"],
           "privateKey": "$PRIVATE_KEY",
-          "shortIds": ["12345678"]
+          "shortIds": ["$SHORT_ID"]
         }
       }
     }
