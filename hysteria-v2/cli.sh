@@ -26,6 +26,7 @@ install() {
   fi
 
   read -p "Введите пароль для клиента (можно придумать любой): " PASSWORD
+  read -p "Введите obfs password (для маскировки salamander): " OBFS_PASSWORD
 
   echo "🔧 Установка Hysteria2..."
   curl -L -o /usr/local/bin/hysteria https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
@@ -41,7 +42,7 @@ auth:
 obfs:
   type: salamander
   salamander:
-    enabled: true
+    password: "$OBFS_PASSWORD"
 bandwidth:
   up: 100 mbps
   down: 100 mbps
@@ -70,13 +71,15 @@ EOF
   echo ""
   echo "✅ Hysteria2 установлен на порту $PORT (UDP)"
   echo "🔐 Пароль: $PASSWORD"
+  echo "🫥 Obfs password: $OBFS_PASSWORD"
   echo "🌍 IP-адрес сервера: $IP"
   echo "Добавь это в клиентский конфиг и в путь!"
 }
 
 client_config() {
   PORT=$(grep 'listen:' /etc/hysteria/config.yaml | awk '{print $2}' | sed 's/://')
-  PASSWORD=$(grep 'password:' /etc/hysteria/config.yaml | awk 'NR==1{print $2}' | tr -d '"')
+  PASSWORD=$(grep 'password:' /etc/hysteria/config.yaml | head -n 1 | awk '{print $2}' | tr -d '"')
+  OBFS_PASSWORD=$(grep 'password:' /etc/hysteria/config.yaml | tail -n 1 | awk '{print $2}' | tr -d '"')
   IP=$(curl -s https://api.ipify.org || echo "your.server.ip")
 
   echo ""
@@ -90,6 +93,7 @@ proxies:
     port: $PORT
     password: "$PASSWORD"
     obfs: salamander
+    obfs-password: "$OBFS_PASSWORD"
     up: "100 mbps"
     down: "100 mbps"
 
