@@ -208,8 +208,10 @@ case "$COMMAND" in
     add
     ;;
   remove)
-    list;
-    remove
+    check_config
+    list
+    shift
+    remove "$@"
     ;;
   config)
     nano $CONFIG && systemctl restart xray
