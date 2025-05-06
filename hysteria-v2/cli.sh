@@ -8,10 +8,11 @@ show_help() {
   echo "🧭 Hysteria2 CLI"
   echo ""
   echo "Использование:"
-  echo "  ./cli.sh install     — установка Hysteria2 (UDP)"
-  echo "  ./cli.sh config      — редактировать конфигурацию"
-  echo "  ./cli.sh log         — показать логи"
-  echo "  ./cli.sh status      — статус hysteria"
+  echo "  ./cli.sh install       — установка Hysteria2 (UDP)"
+  echo "  ./cli.sh config        — редактировать конфигурацию"
+  echo "  ./cli.sh log           — показать логи"
+  echo "  ./cli.sh status        — статус hysteria"
+  echo "  ./cli.sh client-config — показать конфиг для Clash"
   echo ""
 }
 
@@ -73,6 +74,37 @@ EOF
   echo "Добавь это в клиентский конфиг и в путь!"
 }
 
+client_config() {
+  PORT=$(grep 'listen:' /etc/hysteria/config.yaml | awk '{print $2}' | sed 's/://')
+  PASSWORD=$(grep 'password:' /etc/hysteria/config.yaml | awk 'NR==1{print $2}' | tr -d '"')
+  IP=$(curl -s https://api.ipify.org || echo "your.server.ip")
+
+  echo ""
+  echo "📄 Конфиг для Clash (Hysteria2):"
+  echo ""
+  cat <<EOF
+proxies:
+  - name: \"Hysteria2-Server\"
+    type: hysteria2
+    server: $IP
+    port: $PORT
+    password: \"$PASSWORD\"
+    obfs: salamander
+    up: \"100 mbps\"
+    down: \"100 mbps\"
+
+proxy-groups:
+  - name: \"Proxy\"
+    type: select
+    proxies:
+      - Hysteria2-Server
+      - DIRECT
+
+rules:
+  - MATCH,Proxy
+EOF
+}
+
 case "$COMMAND" in
   install)
     install
@@ -85,6 +117,9 @@ case "$COMMAND" in
     ;;
   status)
     systemctl status hysteria
+    ;;
+  client-config)
+    client_config
     ;;
   *)
     show_help
