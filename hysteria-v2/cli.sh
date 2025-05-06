@@ -64,9 +64,12 @@ EOF
   systemctl enable hysteria
   systemctl restart hysteria
 
+  IP=$(curl -s https://api.ipify.org || echo "не удалось определить")
+
   echo ""
   echo "✅ Hysteria2 установлен на порту $PORT (UDP)"
   echo "🔐 Пароль: $PASSWORD"
+  echo "🌍 IP-адрес сервера: $IP"
   echo "Добавь это в клиентский конфиг и в путь!"
 }
 
