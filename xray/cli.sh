@@ -62,9 +62,9 @@ install() {
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "www.cloudflare.com:443",
+          "dest": "cdn.jsdelivr.net:443",
           "xver": 0,
-          "serverNames": ["www.cloudflare.com"],
+          "serverNames": ["cdn.jsdelivr.net"],
           "privateKey": "$PRIVATE_KEY",
           "shortIds": ["12345678"]
         }
