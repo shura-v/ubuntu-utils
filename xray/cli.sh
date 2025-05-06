@@ -162,23 +162,36 @@ add() {
 }
 
 remove() {
-  # Имя клиента
-  read -p "Введите имя клиента для удаления (email, например: iphone): " NAME
-
-  # Проверка, существует ли такой пользователь
-  EXISTS=$(jq -r --arg name "$NAME" '.inbounds[0].settings.clients[] | select(.email == $name)' "$CONFIG")
-
-  if [ -z "$EXISTS" ]; then
-    echo "❌ Клиент '$NAME' не найден в конфиге."
-    exit 1
+  if [[ "$1" == "--all" ]]; then
+    read -p "❗ Ты точно хочешь удалить всех клиентов? [y/N]: " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+      TMP=$(mktemp)
+      jq '.inbounds[0].settings.clients = []' "$CONFIG" > "$TMP" && mv "$TMP" "$CONFIG"
+      systemctl restart xray
+      echo "🧹 Все клиенты удалены."
+    else
+      echo "🚫 Отменено."
+    fi
+    return
   fi
 
-  # Удаление клиента
-  TMP=$(mktemp)
-  jq --arg name "$NAME" '(.inbounds[0].settings.clients) |= map(select(.email != $name))' "$CONFIG" > "$TMP"
+  if [ "$#" -lt 1 ]; then
+    read -p "Введите имя клиента для удаления (например: iphone): " NAME
+    set -- "$NAME"
+  fi
 
-  mv "$TMP" "$CONFIG"
-  echo "🗑️ Клиент '$NAME' удалён."
+  for CLIENT_NAME in "$@"; do
+    EXISTS=$(jq -r --arg name "$CLIENT_NAME" '.inbounds[0].settings.clients[] | select(.email == $name)' "$CONFIG")
+
+    if [ -z "$EXISTS" ]; then
+      echo "⚠️  Клиент '$CLIENT_NAME' не найден."
+    else
+      TMP=$(mktemp)
+      jq --arg name "$CLIENT_NAME" '(.inbounds[0].settings.clients) |= map(select(.email != $name))' "$CONFIG" > "$TMP" && mv "$TMP" "$CONFIG"
+      echo "🗑️ Клиент '$CLIENT_NAME' удалён."
+    fi
+  done
+
   systemctl restart xray
 }
 
