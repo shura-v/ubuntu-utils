@@ -13,6 +13,7 @@ show_help() {
   echo "  ./cli.sh add         — добавить клиента"
   echo "  ./cli.sh list        — список клиентов"
   echo "  ./cli.sh remove      — удалить клиента"
+  echo "  ./cli.sh restart     — перезапустить"
   echo "  ./cli.sh config      — редактировать конфигурацию"
   echo "  ./cli.sh log         — показать логи"
   echo "  ./cli.sh status      — статус xray"
@@ -212,6 +213,9 @@ case "$COMMAND" in
     list
     shift
     remove "$@"
+    ;;
+  restart)
+    systemctl restart xray
     ;;
   config)
     nano $CONFIG && systemctl restart xray
